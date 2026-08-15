@@ -1,0 +1,927 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/
+  config/
+    gameConfig.ts
+    zones.ts
+  scenes/
+    BootScene.ts
+    CutsceneScene.ts
+    GameOverScene.ts
+    GameScene.ts
+    MenuScene.ts
+    PreloadScene.ts
+  systems/
+    ZoneManager.ts
+  main.ts
+.gitignore
+index.html
+package.json
+.repomixignore
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/config/gameConfig.ts">
+import Phaser from 'phaser';
+import BootScene from '../scenes/BootScene';
+import PreloadScene from '../scenes/PreloadScene';
+import MenuScene from '../scenes/MenuScene';
+import GameScene from '../scenes/GameScene';
+import GameOverScene from '../scenes/GameOverScene';
+import CutsceneScene from '../scenes/CutsceneScene';
+
+// --- โค้ดใหม่: คำนวณความกว้างเกม ให้พอดีกับสัดส่วนหน้าจอ (Aspect Ratio) ของผู้เล่น ---
+const screenRatio = window.innerWidth / window.innerHeight;
+const gameHeight = 400; // ล็อคความสูงระบบฟิสิกส์ไว้ที่เดิม
+const gameWidth = gameHeight * screenRatio; // ความกว้างจะยืดออกตามจอจริง
+
+export const gameConfig: Phaser.Types.Core.GameConfig = {
+  type: Phaser.AUTO,
+  width: gameWidth,     // ดึงค่าความกว้างที่ยืดหยุ่นมาใช้
+  height: gameHeight,
+  parent: 'app',        // ★ แก้ให้ตรงกับ id="app" ในไฟล์ HTML แล้วครับ
+
+  
+  
+  antialias: true, // เปิดระบบลบรอยหยัก (Smoothing)
+  
+
+  physics: {
+    default: 'arcade',
+    arcade: { gravity: {x: 0 , y: 2200 }, debug: true }, // (ถ้าภาพเป๊ะแล้ว เปลี่ยน debug เป็น false ได้เลยนะครับ)
+  },
+  scale: {
+    mode: Phaser.Scale.FIT, // ระบบจะขยายเกมให้เต็มจอพอดี โดยไม่มีขอบดำ!
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
+  scene: [BootScene, PreloadScene,CutsceneScene, MenuScene, GameScene, GameOverScene],
+};
+</file>
+
+<file path="src/config/zones.ts">
+export interface BackgroundLayer {
+  key: string;
+  scrollFactor: number;
+}
+
+export interface ZoneConfig {
+  id: string;
+  name: string;
+  startTime: number; // เรายังใช้หน่วยเวลาในการสลับด่านอยู่ (เพราะ 60 วิ = 1 กม.)
+  endTime: number;
+  background: BackgroundLayer[];
+  groundKey: string;
+  bgmKey: string;
+  scrollSpeed: number;
+}
+
+export const TOTAL_DISTANCE_KM = 11; // ระยะทางเป้าหมาย 11 กิโลเมตร
+export const TOTAL_GAME_TIME_SEC = TOTAL_DISTANCE_KM * 60; // แปลงเป็นวินาที (11 * 60 = 660 วินาที)
+
+export const DEV_TIME_SCALE = 1; //ปรับความเร็วเกมเช่น 30 - 50 กำลังดี พอเสพบรรยากาศ
+
+export const zones: ZoneConfig[] = [
+  {
+    id: 'zone1',
+    name: 'ด่านปกติ',
+    startTime: 0,
+    endTime: TOTAL_GAME_TIME_SEC / 2, // ครึ่งแรก (0 ถึง 5.5 กม.)
+    background: [
+      { key: 'zone1-Background', scrollFactor: 0 }, 
+      { key: 'zone1-Far', scrollFactor: 0.2 },        
+      { key: 'zone1-Middle', scrollFactor: 0.3 },     
+    ],
+    groundKey: 'zone1-floor', // ⚡ เปลี่ยนเป็นพิมพ์เล็กให้ปลอดภัยเวลาอัปขึ้นเว็บ
+    bgmKey: 'zone1-bgm',
+    scrollSpeed: 6,
+  },
+  {
+    id: 'zone2',
+    name: 'ด่านหิมะ',
+    startTime: TOTAL_GAME_TIME_SEC / 2, // ครึ่งหลัง (5.5 ถึง 11 กม.)
+    endTime: TOTAL_GAME_TIME_SEC,
+    background: [
+      { key: 'zone2-Background', scrollFactor: 0 },
+      { key: 'zone2-Far', scrollFactor: 0.2 },
+      { key: 'zone2-Middle', scrollFactor: 0.3 },
+    ],
+    groundKey: 'zone2-floor',
+    bgmKey: 'zone2-bgm',
+    scrollSpeed: 6,
+  }
+];
+
+export const finishZone: ZoneConfig = {
+  id: 'finish',
+  name: 'เส้นชัย',
+  startTime: TOTAL_GAME_TIME_SEC,
+  endTime: Infinity,
+  background: [
+    { key: 'finish-bg-far', scrollFactor: 0.2 },
+    { key: 'finish-bg-near', scrollFactor: 0.6 },
+  ],
+  groundKey: 'finish-ground',
+  bgmKey: 'finish-bgm',
+  scrollSpeed: 0,
+};
+</file>
+
+<file path="src/scenes/BootScene.ts">
+import Phaser from 'phaser';
+
+export default class BootScene extends Phaser.Scene {
+  constructor() {
+    super('Boot');
+  }
+
+  create(): void {
+    this.scene.start('Preload');
+  }
+}
+</file>
+
+<file path="src/scenes/CutsceneScene.ts">
+import Phaser from 'phaser';
+
+interface CutsceneData {
+  images: string[];       
+  nextScene: string;      
+  nextSceneData?: any;    
+}
+
+export default class CutsceneScene extends Phaser.Scene {
+  private images: string[] = [];
+  private currentIndex: number = 0;
+  private currentImageObj!: Phaser.GameObjects.Image;
+  private nextScene: string = '';
+  private nextSceneData: any;
+
+  constructor() {
+    super('Cutscene');
+  }
+
+  create(data: CutsceneData): void {
+    this.images = data.images;
+    this.nextScene = data.nextScene;
+    this.nextSceneData = data.nextSceneData;
+    this.currentIndex = 0;
+
+    const { width, height } = this.scale;
+
+    // แสดงภาพแรกของคิวที่ส่งมา
+    this.currentImageObj = this.add.image(width / 2, height / 2, this.images[this.currentIndex]);
+    this.currentImageObj.setDisplaySize(width, height);
+
+    this.add.text(width - 20, height - 20, 'กด SPACE เพื่อดูต่อ ►', {
+      fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 6
+    }).setOrigin(1, 1).setDepth(10);
+
+    // กด SPACE เพื่อเปลี่ยนภาพ
+    this.input.keyboard?.on('keydown-SPACE', () => {
+      this.currentIndex++;
+      
+      if (this.currentIndex < this.images.length) {
+        // เปลี่ยนเป็นภาพถัดไป
+        this.currentImageObj.setTexture(this.images[this.currentIndex]);
+      } else {
+        // รูปหมดแล้ว ไปหน้าต่อไป
+        this.input.keyboard?.removeAllListeners('keydown-SPACE'); 
+        this.scene.start(this.nextScene, this.nextSceneData);
+      }
+    });
+  }
+}
+</file>
+
+<file path="src/scenes/GameOverScene.ts">
+import Phaser from 'phaser';
+
+interface GameOverData {
+  finished: boolean;
+  time: number;
+}
+
+export default class GameOverScene extends Phaser.Scene {
+  constructor() {
+    super('GameOver');
+  }
+
+  create(data: GameOverData): void {
+    const { width, height } = this.scale;
+
+    this.add.image(width / 2, height / 2, 'gameover-bg').setDisplaySize(width, height);
+    
+    // ⚡ คำนวณระยะทางจากเวลาที่รับมา
+    const distanceKm = Math.min(data.time / 60, 11).toFixed(2);
+
+    const titleText = data.finished ? 'ถึงเส้นชัยแล้ว!' : 'เกมโอเวอร์ (ชนสิ่งกีดขวาง)';
+    const titleColor = data.finished ? '#00ff00' : '#ff0000'; 
+
+    this.add
+      .text(width / 2, height / 2 - 30, titleText, { fontSize: '28px', color: titleColor, fontStyle: 'bold' })
+      .setOrigin(0.5);
+
+    // ⚡ เปลี่ยนข้อความเป็นบอกระยะทาง
+    this.add
+      .text(width / 2, height / 2 + 10, `ระยะทางที่วิ่งได้: ${distanceKm} กิโลเมตร`, {
+        fontSize: '18px',
+        color: '#ffffff',
+        fontStyle: 'bold' // ใส่ตัวหนาให้ด้วยเลยครับ
+      })
+      .setOrigin(0.5);
+
+    this.input.keyboard?.once('keydown-SPACE', () => {
+      this.scene.start('Menu');
+    });
+  }
+}
+</file>
+
+<file path="src/scenes/GameScene.ts">
+import Phaser from 'phaser';
+import ZoneManager from '../systems/ZoneManager';
+// ⚡ ดึง TOTAL_DISTANCE_KM มาใช้งาน
+import { zones, TOTAL_GAME_TIME_SEC, DEV_TIME_SCALE, TOTAL_DISTANCE_KM } from '../config/zones';
+
+export default class GameScene extends Phaser.Scene {
+  private zoneManager!: ZoneManager;
+  private player!: Phaser.Physics.Arcade.Sprite;
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private keyW!: Phaser.Input.Keyboard.Key;
+  private keyS!: Phaser.Input.Keyboard.Key;
+  private isSlidingState: boolean = false;
+  private timerText!: Phaser.GameObjects.Text;
+  private elapsedSec = 0;
+  private gameEnded = false;
+  private obstacles!: Phaser.Physics.Arcade.Group;
+  private spawnTimer!: Phaser.Time.TimerEvent;
+
+  constructor() {
+    super('Game');
+  }
+
+  create(): void {
+    this.elapsedSec = 0;
+    this.gameEnded = false;
+
+    this.zoneManager = new ZoneManager(this);
+    this.zoneManager.setupZoneVisuals(zones[0]);
+
+    this.player = this.physics.add.sprite(150, 100, 'player-run');
+    this.player.setDepth(20); // ★ สำคัญ: ทำให้ตัวละครอยู่หน้าพื้นหลังและพื้นวิ่งเสมอ
+
+    this.player.setScale(0.1);
+
+    this.player.refreshBody(); // สั่งให้อัปเดตกรอบฟิสิกส์ตามสเกลที่ถูกย่อก่อน
+
+    // --- โค้ดใหม่: หดและเลื่อนกรอบฟิสิกส์ (กล่องม่วง) ---
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+
+    // 1. setSize(ความกว้าง, ความสูง)
+    // จากเดิมกล่องกว้างและสูง 1023x1023 เราจะบีบมันให้เล็กลง (ใส่ตัวเลขของภาพขนาดเต็มก่อนย่อนะครับ)
+    // ลองใส่ความกว้างสัก 400 ความสูงสัก 600
+    body.setSize(400, 680);
+
+    // 2. setOffset(เลื่อนแกน X, เลื่อนแกน Y)
+    // เลื่อนกล่องที่ถูกบีบแล้ว ให้มาครอบพอดีตัวละคร (เลื่อนขวา, เลื่อนลง)
+    // ลองเลื่อนขวาสัก 300 และเลื่อนลงมาสัก 200
+    body.setOffset(300, 200);
+    // ---------------------------------------------
+
+    this.anims.create({
+      key: 'run',
+      frames: this.anims.generateFrameNumbers('player-run', { start: 0, end: 6 }),
+      frameRate: 13,
+      repeat: -1,
+    });
+    this.player.play('run');
+
+    if (this.zoneManager.ground) {
+      this.physics.add.collider(this.player, this.zoneManager.ground);
+    }
+
+    // --- ปรับแต่งตัวหนังสือบอกระยะทาง ---
+    // --- เทคนิคตัวหนังสือคมกริบ (สร้างใหญ่ 4 เท่า แล้วย่อสเกลลง 0.25) ---
+    this.timerText = this.add
+      .text(16, 16, '', { 
+        fontSize: '180px',         // ⚡ ใหญ่ขึ้น 4 เท่า (จาก 24px -> 96px)
+        color: '#ffffff',         
+        fontStyle: '900',         
+        stroke: '#000000',        
+        strokeThickness: 45,      // ⚡ ขอบหนาขึ้น 4 เท่า (จาก 5 -> 20)
+        shadow: {                 
+          offsetX: 15,             // ⚡ เงาใหญ่ขึ้น 4 เท่า (จาก 2 -> 8)
+          offsetY: 8,
+          color: '#000000',
+          fill: true
+        }
+      })
+      .setDepth(100)
+      .setScale(0.13); // ⚡ ย่อกลับมาให้เหลือขนาดเท่าเดิมด้วย 0.25
+
+    this.cursors = this.input.keyboard!.createCursorKeys();
+    this.keyW = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+    this.keyS = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+
+    // 1. สร้าง Group สำหรับเก็บสิ่งกีดขวาง
+    this.obstacles = this.physics.add.group();
+
+    // 2. สั่งให้เช็คการชนระหว่าง player กับ obstacles ถ้าชนให้เรียกฟังก์ชัน hitObstacle
+    this.physics.add.collider(
+      this.player,
+      this.obstacles,
+      this.hitObstacle,
+      undefined, 
+      this
+    );
+
+    // --- โค้ดใหม่: สุ่มเวลาเกิดก้อนแรก (ระหว่าง 500 - 2500 มิลลิวินาที) ---
+    this.spawnTimer = this.time.addEvent({
+      delay: Phaser.Math.Between(500, 2500), 
+      callback: this.spawnObstacle,
+      callbackScope: this
+      // ⚡ สังเกตว่าเราเอา loop: true ออกไปแล้ว
+    });
+  }
+
+  update(_time: number, delta: number): void {
+    if (this.gameEnded) return;
+
+    this.elapsedSec += (delta / 1000) * DEV_TIME_SCALE;
+
+    if (this.elapsedSec >= TOTAL_GAME_TIME_SEC + 5) {
+      this.finishGame(true);
+      return;
+    }
+
+    // ลบสิ่งกีดขวางที่วิ่งหลุดจอด้านซ้ายไปแล้ว
+    this.obstacles.getChildren().forEach((child) => {
+      const obs = child as Phaser.Physics.Arcade.Sprite;
+      // ถ้าตำแหน่ง X น้อยกว่า -50 (หลุดขอบซ้าย) ให้ทำลายทิ้ง
+      if (obs.x < -50) {
+        obs.destroy();
+      }
+    });
+
+    this.zoneManager.update(this.elapsedSec);
+    this.updateHUD();
+
+    const isJumping = this.cursors.space.isDown || this.cursors.up.isDown || this.keyW.isDown;
+    const isSliding = this.cursors.down.isDown || this.keyS.isDown;
+    
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    // ใช้ blocked.down จะแม่นยำกว่า touching.down เวลาเปลี่ยนขนาดกล่อง
+    const onGround = body.touching.down || body.blocked.down;
+
+    // --- 1. ระบบกระโดด ---
+    // (ต้องไม่ได้สไลด์อยู่ ถึงจะกระโดดได้)
+    if (isJumping && onGround && !this.isSlidingState) {
+      this.player.setVelocityY(-900);
+    }
+
+    // --- 2. ระบบสไลด์ และ พุ่งลงพื้น ---
+    if (isSliding) {
+      if (onGround) {
+        // กรณีที่ 1: อยู่บนพื้น + กดสไลด์
+        if (!this.isSlidingState) {
+          this.isSlidingState = true; // ล็อคสวิตช์
+          
+          // ⚡ บีบสเกลแกน Y อย่างเดียวพอครับ (กรอบฟิสิกส์จะถูกบีบตามอัตโนมัติ)
+          this.player.setScale(0.1, 0.05); 
+          
+          // ⚡ ดันตัวละครลง 18 พิกเซล (เลขนี้คำนวณมาพอดีเป๊ะ เท้าจะแตะพื้นเดิมไม่ทะลุ)
+          this.player.y += 18; 
+        }
+      } else {
+        // กรณีที่ 2: อยู่กลางอากาศ + กดสไลด์ -> พุ่งลงพื้น
+        this.player.setVelocityY(1500); 
+      }
+    } else {
+      // กรณีที่ 3: ปล่อยปุ่มสไลด์ -> คืนร่างเดิม
+      if (this.isSlidingState) {
+        this.isSlidingState = false; // ปลดล็อคสวิตช์
+        
+        // ⚡ คืนสเกลกลับเป็นปกติ
+        this.player.setScale(0.1, 0.1); 
+        
+        // ⚡ ดึงตัวละครกลับขึ้นมา 18 พิกเซล เพื่อให้กลับมายืนบนพื้นพอดี
+        this.player.y -= 18; 
+      }
+    }
+  }
+
+  private updateHUD(): void {
+    // คำนวณระยะทางปัจจุบัน (เวลา 60 วิ = 1 กิโลเมตร)
+    const currentDistanceKm = this.elapsedSec / 60;
+    
+    // ล็อกตัวเลขไม่ให้เกิน 11 กม. ตอนเข้าเส้นชัย และแสดงทศนิยม 2 ตำแหน่ง
+    const displayDistance = Math.min(currentDistanceKm, TOTAL_DISTANCE_KM).toFixed(2);
+    
+    // เปลี่ยนตัวหนังสือเป็นระยะทาง
+    this.timerText.setText(`ระยะทาง: ${displayDistance} / ${TOTAL_DISTANCE_KM} km`);
+  }
+
+  // เปลี่ยนเป็นรับพารามิเตอร์ isWin
+  private finishGame(isWin: boolean): void {
+    this.gameEnded = true;
+
+    if (this.spawnTimer) {
+      this.spawnTimer.remove();
+    }
+
+    if (isWin) {
+      // ⚡ ถ้าชนะเข้าเส้นชัย ให้ไปหน้า Cutscene แล้วส่งรูป 4, 5, 6 ไปให้
+      this.scene.start('Cutscene', {
+        images: ['cutscene4', 'cutscene5', 'cutscene6'], 
+        nextScene: 'GameOver', // ดูคัตซีนจบแล้ว ค่อยเด้งไปหน้าสรุปผล
+        nextSceneData: { finished: isWin, time: this.elapsedSec } 
+      });
+    } else {
+      // ⚡ ถ้าแพ้ชนหิน ไม่ต้องดูคัตซีน เด้งไปหน้า GameOver ทันทีเลย
+      this.scene.start('GameOver', { finished: isWin, time: this.elapsedSec });
+    }
+  }
+
+  // ฟังก์ชันเสกสิ่งกีดขวาง
+  // ฟังก์ชันเสกสิ่งกีดขวาง
+  private spawnObstacle(): void {
+    if (this.gameEnded) return;
+
+    const startX = this.scale.width + 50;
+    const currentZone = this.zoneManager.getZoneAt(this.elapsedSec);
+    const speed = -(currentZone.scrollSpeed * 60);
+
+    // --- ⚡ ระบบสุ่มเกิด: หิน 66% นก 33% (โอกาสนกน้อยกว่าครึ่งนึง) ---
+    let spawnRock = Phaser.Math.Between(1, 100) <= 66;
+    let spawnBird = Phaser.Math.Between(1, 100) <= 33;
+
+    // ถ้าดวงซวยสุ่มแล้วไม่เกิดอะไรเลย ให้บังคับเกิดหิน 1 ก้อน (เกมจะได้ไม่โล่งไป)
+    if (!spawnRock && !spawnBird) {
+      spawnRock = true;
+    }
+
+    // --- 1. สร้างก้อนหิน (ถ้าสุ่มได้) ---
+    if (spawnRock) {
+      const rockY = 315;
+      const rock = this.obstacles.create(startX, rockY, 'obstacle') as Phaser.Physics.Arcade.Sprite;
+      rock.setOrigin(0.5, 1);
+      rock.setScale(0.03); 
+      rock.setDepth(15);
+      (rock.body as Phaser.Physics.Arcade.Body).allowGravity = false;
+      
+      rock.refreshBody();
+      const rockBody = rock.body as Phaser.Physics.Arcade.Body;
+      rockBody.setSize(1548, 1048);
+      rockBody.setOffset(500, 1000);
+      rock.setVelocityX(speed);
+    }
+
+    // --- 2. สร้างนก (ถ้าสุ่มได้) ---
+    if (spawnBird) {
+      // ⚡ ความสูงของนก (เลข Y ยิ่งน้อย = ยิ่งบินสูง) 
+      // ลองกะระยะดูนะครับ ถ้าตัวละครสไลด์ไม่พ้น หรือกระโดดไม่พ้น ให้มาแก้เลขนี้
+      const birdY = 270; 
+      
+      // ⚡ ถ้าออกพร้อมหิน ให้ผลักนกถอยหลังไปอีกนิด (ผู้เล่นจะได้มีเวลากระโดดหิน แล้วลงมาสไลด์ต่อทัน)
+      const birdX = spawnRock ? startX + Phaser.Math.Between(250, 400) : startX;
+
+      const bird = this.obstacles.create(birdX, birdY, 'bird') as Phaser.Physics.Arcade.Sprite;
+      bird.setOrigin(0.5, 1);
+      
+      // --- ปรับสเกลภาพนก ---
+      // (ลองใส่ 0.1 ดูก่อน กัสสามารถปรับแก้ให้เล็ก/ใหญ่ได้ตามภาพจริงครับ)
+      bird.setScale(0.29); 
+      bird.setDepth(15);
+      (bird.body as Phaser.Physics.Arcade.Body).allowGravity = false;
+      
+      // --- ปรับกล่องฟิสิกส์นก ---
+      bird.refreshBody();
+      const birdBody = bird.body as Phaser.Physics.Arcade.Body;
+      
+      // ⚡ กัสสามารถปลดคอมเมนต์ 2 บรรทัดล่างนี้ เพื่อปรับขนาดกรอบม่วงของนกได้เลยครับ 
+      birdBody.setSize(100, 100); 
+      birdBody.setOffset(0, 0);
+      
+      bird.setVelocityX(speed * 2.5);
+    }
+
+    // --- สุ่มเวลาเกิดรอบถัดไป ---
+    this.spawnTimer = this.time.addEvent({
+      delay: Phaser.Math.Between(700, 2500), 
+      callback: this.spawnObstacle,
+      callbackScope: this
+    });
+  }
+
+  // ฟังก์ชันเมื่อผู้เล่นชนสิ่งกีดขวาง
+  private hitObstacle(): void {
+    this.physics.pause(); // หยุดระบบฟิสิกส์ทั้งหมด (ตัวละครหยุดนิ่ง)
+    this.player.setTint(0xff0000); // เปลี่ยนตัวละครเป็นสีแดง
+    this.player.anims.stop(); // หยุดอนิเมชันวิ่ง
+
+    // สั่งจบเกม (รอ 0.5 วินาทีแล้วเด้งไปหน้า GameOver)
+    this.time.delayedCall(500, () => {
+      this.finishGame(false);
+    });
+  }
+  
+}
+</file>
+
+<file path="src/scenes/MenuScene.ts">
+import Phaser from 'phaser';
+
+export default class MenuScene extends Phaser.Scene {
+  constructor() {
+    super('Menu');
+  }
+
+  create(): void {
+    const { width, height } = this.scale;
+
+    this.add.image(width / 2, height / 2, 'menu-bg').setDisplaySize(width, height);
+
+    this.add
+      .text(width / 2, height / 2 - 40, 'Dino Run', { fontSize: '32px', color: '#000000', fontStyle: 'bold' })
+      .setOrigin(0.5);
+
+    const startText = this.add
+      .text(width / 2, height / 2 + 20, 'กด SPACE เพื่อเริ่ม', { fontSize: '18px', color: '#000000', fontStyle: 'bold' })
+      .setOrigin(0.5);
+
+    this.input.keyboard?.once('keydown-SPACE', () => {
+      // ⚡ ลบ this.scene.start('Game'); ตรงนี้ออกไปเลยครับ
+
+      // ให้เหลือแค่การเรียก Cutscene อย่างเดียว
+      this.scene.start('Cutscene', { 
+        images: ['cutscene1', 'cutscene2', 'cutscene3'], 
+        nextScene: 'Game' // ระบบจะจัดการพาไปหน้า Game เองตอนดูรูปจบครับ
+      });
+    });
+
+    this.tweens.add({
+      targets: startText,
+      alpha: 0.2,
+      yoyo: true,
+      repeat: -1,
+      duration: 600,
+    });
+  }
+}
+</file>
+
+<file path="src/scenes/PreloadScene.ts">
+import Phaser from 'phaser';
+import { zones, finishZone } from '../config/zones';
+
+export default class PreloadScene extends Phaser.Scene {
+  constructor() {
+    super('Preload');
+  }
+
+  preload(): void {
+    const allZones = [...zones, finishZone];
+
+    for (const zone of allZones) {
+      for (const layer of zone.background) {
+        const fileName = layer.key.replace(`${zone.id}-`, '');
+        this.load.image(layer.key, `assets/images/zones/${zone.id}/${fileName}.png`);
+      }
+      const groundFileName = zone.groundKey.replace(`${zone.id}-`, '');
+      this.load.image(zone.groundKey, `assets/images/zones/${zone.id}/${groundFileName}.png`);
+      // TODO: เพิ่มไฟล์เสียงจริงในโฟลเดอร์ public/assets/audio/ แล้วค่อยเปิดบรรทัดล่างนี้กลับมาใช้
+      // this.load.audio(zone.bgmKey, `assets/audio/${zone.bgmKey}.mp3`);
+    }
+
+    this.load.spritesheet('player-run', 'assets/images/SpriteCharacter.png', {
+      frameWidth: 1023, // ความกว้างของ 1 เฟรม 
+      frameHeight: 1023, // ความสูงของ 1 เฟรม
+    });
+
+    this.load.image('obstacle', 'assets/images/Obstacle.png');
+    this.load.image('bird', 'assets/images/bird.png');
+
+    // โหลดภาพหน้าเริ่มเกม
+    this.load.image('menu-bg', 'assets/images/welcome.png'); 
+    
+    // โหลดภาพหน้าจบเกม (ชนสิ่งกีดขวาง)
+    this.load.image('gameover-bg', 'assets/images/gameover.png');
+
+    // --- ⚡ โหลดภาพคัตซีนทั้ง 6 ภาพจากโฟลเดอร์ cutscene ---
+    this.load.image('cutscene1', 'assets/images/cutscene/cutscene1.png');
+    this.load.image('cutscene2', 'assets/images/cutscene/cutscene2.png');
+    this.load.image('cutscene3', 'assets/images/cutscene/cutscene3.png');
+    
+    this.load.image('cutscene4', 'assets/images/cutscene/cutscene4.png');
+    this.load.image('cutscene5', 'assets/images/cutscene/cutscene5.png');
+    this.load.image('cutscene6', 'assets/images/cutscene/cutscene6.png');
+  }
+
+  create(): void {
+
+    this.scene.start('Menu');
+  }
+}
+</file>
+
+<file path="src/systems/ZoneManager.ts">
+import type Phaser from 'phaser';
+import { zones, finishZone, TOTAL_GAME_TIME_SEC, type ZoneConfig } from '../config/zones';
+
+interface ActiveLayer {
+  tile: Phaser.GameObjects.TileSprite;
+  speed: number;
+}
+
+export default class ZoneManager {
+  private scene: Phaser.Scene;
+  private currentZoneId: string | null = null;
+  private backgroundLayers: ActiveLayer[] = [];
+  public ground: Phaser.GameObjects.TileSprite | null = null;
+
+  constructor(scene: Phaser.Scene) {
+    this.scene = scene;
+  }
+
+  getZoneAt(timeSec: number): ZoneConfig {
+    if (timeSec >= TOTAL_GAME_TIME_SEC) return finishZone;
+    return zones.find((z) => timeSec >= z.startTime && timeSec < z.endTime) ?? zones[0];
+  }
+
+  update(elapsedSec: number): void {
+    const zone = this.getZoneAt(elapsedSec);
+    if (zone.id !== this.currentZoneId) {
+      this.transitionTo(zone);
+    }
+    for (const layer of this.backgroundLayers) {
+      layer.tile.tilePositionX += layer.speed;
+    }
+    if (this.ground) {
+      const gScale = this.ground.tileScaleX;
+      // หารสเกลเพื่อให้พื้นวิ่งเร็วเท่าสิ่งกีดขวางเป๊ะๆ
+      this.ground.tilePositionX += (zone.scrollSpeed / gScale); 
+    }
+  }
+
+  private transitionTo(zone: ZoneConfig): void {
+    this.currentZoneId = zone.id;
+    const cam = this.scene.cameras.main;
+
+    cam.fadeOut(250, 0, 0, 0);
+    cam.once('camerafadeoutcomplete', () => {
+      this.setupZoneVisuals(zone);
+      cam.fadeIn(250, 0, 0, 0);
+    });
+
+    // เล่นเพลงประจำโซน เฉพาะตอนที่มีไฟล์เสียงโหลดสำเร็จแล้วเท่านั้น
+    // (ตอนนี้ยังไม่มีไฟล์เสียงจริง เลยข้ามไปก่อน จะได้ไม่ error)
+    if (zone.bgmKey && this.scene.cache.audio.exists(zone.bgmKey)) {
+      this.scene.sound.stopAll();
+      this.scene.sound.play(zone.bgmKey, { loop: true, volume: 0.5 });
+    }
+  }
+
+  setupZoneVisuals(zone: ZoneConfig): void {
+    this.currentZoneId = zone.id;
+
+    for (const layer of this.backgroundLayers) {
+      layer.tile.destroy();
+    }
+    this.backgroundLayers = [];
+
+    const { width, height } = this.scene.scale;
+
+    // 1. จัดการภาพพื้นหลัง
+    zone.background.forEach((layerData, i) => {
+      const tile = this.scene.add
+        .tileSprite(width / 2, height / 2, width, height, layerData.key)
+        .setDepth(i);
+        
+      const texHeight = this.scene.textures.get(layerData.key).get().height;
+      const scale = height / texHeight; 
+      tile.setTileScale(scale, scale);
+
+      this.backgroundLayers.push({
+        tile,
+        // เอาความเร็ว หารด้วย scale เพื่อชดเชยให้ภาพที่ถูกย่อเลื่อนเร็วขึ้น
+        speed: (zone.scrollSpeed * layerData.scrollFactor) / scale, 
+      });
+    });
+
+    // 2. จัดการภาพพื้นดิน (Ground) ให้ยืดหยุ่นเหมือนฉากหลัง
+    const gTexHeight = this.scene.textures.get(zone.groundKey).get().height;
+    const gScale = height / gTexHeight; // คำนวณสเกลให้พอดีจอ
+
+    if (this.ground) {
+      this.ground.setTexture(zone.groundKey);
+      this.ground.setTileScale(gScale, gScale);
+    } else {
+      // วาดเต็มจอไปเลย
+      this.ground = this.scene.add
+        .tileSprite(width / 2, height / 2, width, height, zone.groundKey)
+        .setDepth(10);
+      this.ground.setTileScale(gScale, gScale);
+      this.scene.physics.add.existing(this.ground, true);
+    }
+
+    // 3. ปรับกรอบฟิสิกส์ (กล่องม่วง) ของพื้นให้อยู่แค่ขอบล่างสุด
+    const groundBody = this.ground.body as Phaser.Physics.Arcade.StaticBody;
+    const dirtHeight = 85; // ⚡ ความหนาของดิน ถ้าเหยียบแล้วลอยไป ให้เพิ่มเลขนี้ ถ้าจมไปให้ลดเลขนี้ครับ
+    groundBody.setSize(width, dirtHeight);
+    groundBody.setOffset(0, height - dirtHeight); // ดันกล่องม่วงไปติดขอบล่างจอ
+  }
+}
+</file>
+
+<file path="src/main.ts">
+import Phaser from 'phaser';
+import { gameConfig } from './config/gameConfig';
+
+new Phaser.Game(gameConfig);
+</file>
+
+<file path=".gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+</file>
+
+<file path="index.html">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dino Run Test</title>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #1a1a1a; /* เปลี่ยนขอบขาวให้เป็นสีเทาเข้มเกือบดำ */
+        overflow: hidden; /* ซ่อนหลอดเลื่อน (Scrollbar) ด้านข้างทิ้งไป */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #app {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+</file>
+
+<file path="package.json">
+{
+  "name": "dino-run",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
+  }
+}
+</file>
+
+<file path=".repomixignore">
+# โฟลเดอร์ที่ไม่ต้องการ
+node_modules/
+public/
+build/
+dist/
+
+# ไฟล์ภาพและไอคอน
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+*.svg
+*.psd
+
+# ไฟล์เสียงและวิดีโอ
+*.mp3
+*.wav
+*.ogg
+*.flac
+*.mp4
+*.webm
+
+# ไฟล์ฟอนต์และไฟล์บีบอัด
+*.ttf
+*.woff
+*.woff2
+*.zip
+*.rar
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "module": "esnext",
+    "lib": ["ES2023", "DOM"],
+    "types": ["vite/client"],
+    "allowArbitraryExtensions": true,
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}
+</file>
+
+</files>

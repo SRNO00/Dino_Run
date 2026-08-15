@@ -1,0 +1,30 @@
+# โฟลเดอร์ที่ไม่ต้องการ
+node_modules/
+public/
+build/
+dist/
+
+# ไฟล์ภาพและไอคอน
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+*.svg
+*.psd
+
+# ไฟล์เสียงและวิดีโอ
+*.mp3
+*.wav
+*.ogg
+*.flac
+*.mp4
+*.webm
+
+# ไฟล์ฟอนต์และไฟล์บีบอัด
+*.ttf
+*.woff
+*.woff2
+*.zip
+*.rar
