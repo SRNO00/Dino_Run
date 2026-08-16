@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { zones, finishZone } from '../config/zones';
+import { zones } from '../config/zones';
 
 export default class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -7,7 +7,7 @@ export default class PreloadScene extends Phaser.Scene {
   }
 
   preload(): void {
-    const allZones = [...zones, finishZone];
+    const allZones = zones
 
     for (const zone of allZones) {
       for (const layer of zone.background) {

@@ -49,18 +49,3 @@ export const zones: ZoneConfig[] = [
     scrollSpeed: 6,
   }
 ];
-
-export const finishZone: ZoneConfig = {
-  id: 'finish',
-  name: 'เส้นชัย',
-  startTime: TOTAL_GAME_TIME_SEC,
-  endTime: Infinity,
-  background: [
-    { key: 'zone1-Background', scrollFactor: 0 }, 
-      { key: 'zone1-Far', scrollFactor: 0.2 },        
-      { key: 'zone1-Middle', scrollFactor: 0.3 },  
-  ],
-  groundKey: 'finish-ground',
-  bgmKey: 'finish-bgm',
-  scrollSpeed: 0,
-};

@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+// ⚡ 1. เพิ่มบรรทัดนี้ เพื่อดึงตัวแปรมาใช้
+import { TOTAL_GAME_TIME_SEC, TOTAL_DISTANCE_KM } from '../config/zones'; 
 
 interface GameOverData {
   finished: boolean;
@@ -15,8 +17,9 @@ export default class GameOverScene extends Phaser.Scene {
 
     this.add.image(width / 2, height / 2, 'gameover-bg').setDisplaySize(width, height);
     
-    // ⚡ คำนวณระยะทางจากเวลาที่รับมา
-    const distanceKm = Math.min(data.time / 60, 11).toFixed(2);
+    // ⚡ 2. แก้สูตรคำนวณให้เป็นแบบเดียวกับที่ใช้ในหน้าเกม
+    const currentDistanceKm = (data.time / TOTAL_GAME_TIME_SEC) * TOTAL_DISTANCE_KM;
+    const distanceKm = Math.min(currentDistanceKm, TOTAL_DISTANCE_KM).toFixed(2);
 
     const titleText = data.finished ? 'ถึงเส้นชัยแล้ว!' : 'เกมโอเวอร์ (ชนสิ่งกีดขวาง)';
     const titleColor = data.finished ? '#00ff00' : '#ff0000'; 
@@ -25,12 +28,11 @@ export default class GameOverScene extends Phaser.Scene {
       .text(width / 2, height / 2 - 30, titleText, { fontSize: '28px', color: titleColor, fontStyle: 'bold' })
       .setOrigin(0.5);
 
-    // ⚡ เปลี่ยนข้อความเป็นบอกระยะทาง
     this.add
       .text(width / 2, height / 2 + 10, `ระยะทางที่วิ่งได้: ${distanceKm} กิโลเมตร`, {
         fontSize: '18px',
         color: '#ffffff',
-        fontStyle: 'bold' // ใส่ตัวหนาให้ด้วยเลยครับ
+        fontStyle: 'bold' 
       })
       .setOrigin(0.5);
 

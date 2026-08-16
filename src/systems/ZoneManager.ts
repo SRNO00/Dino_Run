@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { zones, finishZone, TOTAL_GAME_TIME_SEC, type ZoneConfig } from '../config/zones';
+import { zones, TOTAL_GAME_TIME_SEC, type ZoneConfig } from '../config/zones';
 
 interface ActiveLayer {
   tile: Phaser.GameObjects.TileSprite;
@@ -17,7 +17,7 @@ export default class ZoneManager {
   }
 
   getZoneAt(timeSec: number): ZoneConfig {
-    if (timeSec >= TOTAL_GAME_TIME_SEC) return finishZone;
+    if (timeSec >= TOTAL_GAME_TIME_SEC) return zones[zones.length - 1];
     return zones.find((z) => timeSec >= z.startTime && timeSec < z.endTime) ?? zones[0];
   }
 

@@ -91,7 +91,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
 
   physics: {
     default: 'arcade',
-    arcade: { gravity: {x: 0 , y: 2200 }, debug: true }, // (ถ้าภาพเป๊ะแล้ว เปลี่ยน debug เป็น false ได้เลยนะครับ)
+    arcade: { gravity: {x: 0 , y: 2200 }, debug: false }, // (ถ้าภาพเป๊ะแล้ว เปลี่ยน debug เป็น false ได้เลยนะครับ)
   },
   scale: {
     mode: Phaser.Scale.FIT, // ระบบจะขยายเกมให้เต็มจอพอดี โดยไม่มีขอบดำ!
@@ -119,7 +119,7 @@ export interface ZoneConfig {
 }
 
 export const TOTAL_DISTANCE_KM = 11; // ระยะทางเป้าหมาย 11 กิโลเมตร
-export const TOTAL_GAME_TIME_SEC = TOTAL_DISTANCE_KM * 60; // แปลงเป็นวินาที (11 * 60 = 660 วินาที)
+export const TOTAL_GAME_TIME_SEC = 10
 
 export const DEV_TIME_SCALE = 1; //ปรับความเร็วเกมเช่น 30 - 50 กำลังดี พอเสพบรรยากาศ
 
@@ -153,20 +153,6 @@ export const zones: ZoneConfig[] = [
     scrollSpeed: 6,
   }
 ];
-
-export const finishZone: ZoneConfig = {
-  id: 'finish',
-  name: 'เส้นชัย',
-  startTime: TOTAL_GAME_TIME_SEC,
-  endTime: Infinity,
-  background: [
-    { key: 'finish-bg-far', scrollFactor: 0.2 },
-    { key: 'finish-bg-near', scrollFactor: 0.6 },
-  ],
-  groundKey: 'finish-ground',
-  bgmKey: 'finish-bgm',
-  scrollSpeed: 0,
-};
 </file>
 
 <file path="src/scenes/BootScene.ts">
@@ -239,6 +225,8 @@ export default class CutsceneScene extends Phaser.Scene {
 
 <file path="src/scenes/GameOverScene.ts">
 import Phaser from 'phaser';
+// ⚡ 1. เพิ่มบรรทัดนี้ เพื่อดึงตัวแปรมาใช้
+import { TOTAL_GAME_TIME_SEC, TOTAL_DISTANCE_KM } from '../config/zones'; 
 
 interface GameOverData {
   finished: boolean;
@@ -255,8 +243,9 @@ export default class GameOverScene extends Phaser.Scene {
 
     this.add.image(width / 2, height / 2, 'gameover-bg').setDisplaySize(width, height);
     
-    // ⚡ คำนวณระยะทางจากเวลาที่รับมา
-    const distanceKm = Math.min(data.time / 60, 11).toFixed(2);
+    // ⚡ 2. แก้สูตรคำนวณให้เป็นแบบเดียวกับที่ใช้ในหน้าเกม
+    const currentDistanceKm = (data.time / TOTAL_GAME_TIME_SEC) * TOTAL_DISTANCE_KM;
+    const distanceKm = Math.min(currentDistanceKm, TOTAL_DISTANCE_KM).toFixed(2);
 
     const titleText = data.finished ? 'ถึงเส้นชัยแล้ว!' : 'เกมโอเวอร์ (ชนสิ่งกีดขวาง)';
     const titleColor = data.finished ? '#00ff00' : '#ff0000'; 
@@ -265,17 +254,16 @@ export default class GameOverScene extends Phaser.Scene {
       .text(width / 2, height / 2 - 30, titleText, { fontSize: '28px', color: titleColor, fontStyle: 'bold' })
       .setOrigin(0.5);
 
-    // ⚡ เปลี่ยนข้อความเป็นบอกระยะทาง
     this.add
       .text(width / 2, height / 2 + 10, `ระยะทางที่วิ่งได้: ${distanceKm} กิโลเมตร`, {
         fontSize: '18px',
         color: '#ffffff',
-        fontStyle: 'bold' // ใส่ตัวหนาให้ด้วยเลยครับ
+        fontStyle: 'bold' 
       })
       .setOrigin(0.5);
 
     this.input.keyboard?.once('keydown-SPACE', () => {
-      this.scene.start('Menu');
+      this.scene.start('Game');
     });
   }
 }
@@ -335,7 +323,7 @@ export default class GameScene extends Phaser.Scene {
     this.anims.create({
       key: 'run',
       frames: this.anims.generateFrameNumbers('player-run', { start: 0, end: 6 }),
-      frameRate: 13,
+      frameRate: 18,
       repeat: -1,
     });
     this.player.play('run');
@@ -424,17 +412,23 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // --- 2. ระบบสไลด์ และ พุ่งลงพื้น ---
+    // --- 2. ระบบสไลด์ และ พุ่งลงพื้น ---
     if (isSliding) {
       if (onGround) {
         // กรณีที่ 1: อยู่บนพื้น + กดสไลด์
         if (!this.isSlidingState) {
-          this.isSlidingState = true; // ล็อคสวิตช์
+          this.isSlidingState = true; 
           
-          // ⚡ บีบสเกลแกน Y อย่างเดียวพอครับ (กรอบฟิสิกส์จะถูกบีบตามอัตโนมัติ)
-          this.player.setScale(0.1, 0.05); 
+          // ⚡ 1. หยุดเล่นอนิเมชันวิ่ง และสลับไปโชว์ภาพ Slide
+          this.player.anims.stop();
+          this.player.setTexture('player-slide');
           
-          // ⚡ ดันตัวละครลง 18 พิกเซล (เลขนี้คำนวณมาพอดีเป๊ะ เท้าจะแตะพื้นเดิมไม่ทะลุ)
-          this.player.y += 18; 
+          // ⚡ 2. ใช้สเกล 0.1 ปกติเลยครับ ไม่ต้องบีบ Y แล้ว
+          this.player.setScale(0.1); 
+          
+          // ⚡ 3. หดกล่องม่วงให้เตี้ยลง (กว้าง 400, สูง 340) และกดให้ติดพื้น
+          body.setSize(400, 340); 
+          body.setOffset(300, 540); 
         }
       } else {
         // กรณีที่ 2: อยู่กลางอากาศ + กดสไลด์ -> พุ่งลงพื้น
@@ -443,22 +437,26 @@ export default class GameScene extends Phaser.Scene {
     } else {
       // กรณีที่ 3: ปล่อยปุ่มสไลด์ -> คืนร่างเดิม
       if (this.isSlidingState) {
-        this.isSlidingState = false; // ปลดล็อคสวิตช์
+        this.isSlidingState = false; 
         
-        // ⚡ คืนสเกลกลับเป็นปกติ
-        this.player.setScale(0.1, 0.1); 
+        // ⚡ 1. สลับภาพกลับเป็นชุดวิ่ง และสั่งให้เล่นอนิเมชันวิ่งต่อทันที
+        this.player.setTexture('player-run');
+        this.player.play('run', true);
         
-        // ⚡ ดึงตัวละครกลับขึ้นมา 18 พิกเซล เพื่อให้กลับมายืนบนพื้นพอดี
-        this.player.y -= 18; 
+        this.player.setScale(0.1); 
+        
+        // ⚡ 2. ดึงกล่องม่วงกลับมาเป็นท่ายืนปกติ (กว้าง 400, สูง 680)
+        body.setSize(400, 680); 
+        body.setOffset(300, 200); 
       }
     }
   }
 
   private updateHUD(): void {
-    // คำนวณระยะทางปัจจุบัน (เวลา 60 วิ = 1 กิโลเมตร)
-    const currentDistanceKm = this.elapsedSec / 60;
+    // ⚡ เปลี่ยนสูตรใหม่: (เวลาที่ผ่านไป / เวลาทั้งหมด) * ระยะทางทั้งหมด
+    const currentDistanceKm = (this.elapsedSec / TOTAL_GAME_TIME_SEC) * TOTAL_DISTANCE_KM;
     
-    // ล็อกตัวเลขไม่ให้เกิน 11 กม. ตอนเข้าเส้นชัย และแสดงทศนิยม 2 ตำแหน่ง
+    // ล็อกตัวเลขไม่ให้เกิน 11 กม. และแสดงทศนิยม 2 ตำแหน่ง
     const displayDistance = Math.min(currentDistanceKm, TOTAL_DISTANCE_KM).toFixed(2);
     
     // เปลี่ยนตัวหนังสือเป็นระยะทาง
@@ -616,7 +614,7 @@ export default class MenuScene extends Phaser.Scene {
 
 <file path="src/scenes/PreloadScene.ts">
 import Phaser from 'phaser';
-import { zones, finishZone } from '../config/zones';
+import { zones } from '../config/zones';
 
 export default class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -624,7 +622,7 @@ export default class PreloadScene extends Phaser.Scene {
   }
 
   preload(): void {
-    const allZones = [...zones, finishZone];
+    const allZones = zones
 
     for (const zone of allZones) {
       for (const layer of zone.background) {
@@ -641,6 +639,8 @@ export default class PreloadScene extends Phaser.Scene {
       frameWidth: 1023, // ความกว้างของ 1 เฟรม 
       frameHeight: 1023, // ความสูงของ 1 เฟรม
     });
+
+    this.load.image('player-slide', 'assets/images/Slide.png');
 
     this.load.image('obstacle', 'assets/images/Obstacle.png');
     this.load.image('bird', 'assets/images/bird.png');
@@ -670,7 +670,7 @@ export default class PreloadScene extends Phaser.Scene {
 
 <file path="src/systems/ZoneManager.ts">
 import type Phaser from 'phaser';
-import { zones, finishZone, TOTAL_GAME_TIME_SEC, type ZoneConfig } from '../config/zones';
+import { zones, TOTAL_GAME_TIME_SEC, type ZoneConfig } from '../config/zones';
 
 interface ActiveLayer {
   tile: Phaser.GameObjects.TileSprite;
@@ -688,7 +688,7 @@ export default class ZoneManager {
   }
 
   getZoneAt(timeSec: number): ZoneConfig {
-    if (timeSec >= TOTAL_GAME_TIME_SEC) return finishZone;
+    if (timeSec >= TOTAL_GAME_TIME_SEC) return zones[zones.length - 1];
     return zones.find((z) => timeSec >= z.startTime && timeSec < z.endTime) ?? zones[0];
   }
 

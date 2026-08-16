@@ -221,10 +221,14 @@ export default class GameScene extends Phaser.Scene {
     const currentZone = this.zoneManager.getZoneAt(this.elapsedSec);
     const speed = -(currentZone.scrollSpeed * 60);
 
-// --- ระบบสุ่มเกิด: หิน 80% / นก 20% ---
-// แต่ละรอบจะเกิดอย่างใดอย่างหนึ่งเท่านั้น
-const spawnBird = Phaser.Math.Between(1, 100) <= 20;
-const spawnRock = !spawnBird;
+    // --- ⚡ ระบบสุ่มเกิด: หิน 66% นก 33% (โอกาสนกน้อยกว่าครึ่งนึง) ---
+    let spawnRock = Phaser.Math.Between(1, 100) <= 66;
+    let spawnBird = Phaser.Math.Between(1, 100) <= 33;
+
+    // ถ้าดวงซวยสุ่มแล้วไม่เกิดอะไรเลย ให้บังคับเกิดหิน 1 ก้อน (เกมจะได้ไม่โล่งไป)
+    if (!spawnRock && !spawnBird) {
+      spawnRock = true;
+    }
 
     // --- 1. สร้างก้อนหิน (ถ้าสุ่มได้) ---
     if (spawnRock) {
@@ -272,11 +276,11 @@ const spawnRock = !spawnBird;
     }
 
     // --- สุ่มเวลาเกิดรอบถัดไป ---
-this.spawnTimer = this.time.addEvent({
-  delay: Phaser.Math.Between(1000, 2500),
-  callback: this.spawnObstacle,
-  callbackScope: this
-});
+    this.spawnTimer = this.time.addEvent({
+      delay: Phaser.Math.Between(700, 2500), 
+      callback: this.spawnObstacle,
+      callbackScope: this
+    });
   }
 
   // ฟังก์ชันเมื่อผู้เล่นชนสิ่งกีดขวาง
