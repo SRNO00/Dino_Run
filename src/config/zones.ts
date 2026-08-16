@@ -56,8 +56,9 @@ export const finishZone: ZoneConfig = {
   startTime: TOTAL_GAME_TIME_SEC,
   endTime: Infinity,
   background: [
-    { key: 'finish-bg-far', scrollFactor: 0.2 },
-    { key: 'finish-bg-near', scrollFactor: 0.6 },
+    { key: 'zone1-Background', scrollFactor: 0 }, 
+      { key: 'zone1-Far', scrollFactor: 0.2 },        
+      { key: 'zone1-Middle', scrollFactor: 0.3 },  
   ],
   groundKey: 'finish-ground',
   bgmKey: 'finish-bgm',
